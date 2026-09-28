@@ -1,40 +1,39 @@
 import os
 import pandas as pd
-import requests #biblioteca para chamar as infos da web
+import requests
 from dotenv import load_dotenv
 
 print("--- ETAPA 1: ACESSANDO A API ---")
-load_dotenv() # Carrega os arquivos do .env
+load_dotenv() # load the .env files
 
-chave_api = os.getenv("RIOT_API_KEY") # Chama a chave_do_api do .env
+chave_api = os.getenv("RIOT_API_KEY") # Calls the API KEY from .env
 
 
-#  ***!!!***  Local para alterar o nome e a tag do usuário
+#  ***!!!***  Change your nickname and tag here
 nickname = "pedrobatista"
 tag = "777"
 #  ***!!!***
 
 
-# URL corrigida para puxar as variáveis e não expor a chave
 url_puuid = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{nickname}/{tag}"
 
-# Mostra o 'crachá' de entrada pra API
+# Shows the token to the API
 senha_entrada = { 
     "X-Riot-Token": chave_api
 }
 # Pega o url_PUUID usando o crachá para API
 resposta = requests.get(url_puuid, headers=senha_entrada)
 
-dados = resposta.json() # Traduz a resposta de json para um dict em python
+dados = resposta.json() # Tanslate de .json answer to a python dict
 print(dados)
 
 #--------------------------------------------------------------
 
 print("--- ETAPA 2: BUSCANDO OS IDs DAS PARTIDAS ---")
 
-meu_puuid = dados["puuid"] # Puxando só o PUUID das respostas anteriores
+meu_puuid = dados["puuid"]
 
-# 'matches' = histórico | 'ids' = pegar apenas os IDs das partidas | '?count=100' = pegar os últimos x games | Da pra mudar o número pra pegar mais partidas do histórico
+# 'matches' = histórico | 'ids' = pegar apenas os IDs das partidas | '?count=100' = pegar os últimos x games |
 url_partidas = f"https://americas.api.riotgames.com/tft/match/v1/matches/by-puuid/{meu_puuid}/ids?count=100"
 
 # Guarda os IDs das últimas x partidas jogadas, nesse caso
@@ -51,31 +50,31 @@ print(lista_partidas)
 
 print(f"\n--- ETAPA 3: PEGANDO AS INFOs DAS {len(lista_partidas)} PARTIDAS ---")
 
-# Inserindo uma tabela em branco
+# Insert a blank table
 dados_tabela = []
 
 meta_de_partidas = 30
 partidas_salvas = 0
 
-# Procura em cada partida da lista de IDs
+# Search each match on ID list
 for partida_id in lista_partidas:
     
     if partidas_salvas == meta_de_partidas:
-        # Checa se o número de partidas foi hitado
+        # Checks if the match numbers hit the cap
         break
 
-        # 1. Busca os dados de uma partida específica, usando o ID dela
+        # 1. Search a specific match data based on it ID
     url = f"https://americas.api.riotgames.com/tft/match/v1/matches/{partida_id}"
     resposta = requests.get(url, headers=senha_entrada)
     dados = resposta.json()
     
     tipo_partida = dados["info"]["queue_id"]
 
-    # Se não for duplas, pula pra próxima partida ----> | 1100 == Ranked | 1160 == Duplas |
+    # If isn't double up, jump to the next ID ----> | 1100 == Solo Ranked | 1160 == Double up |
     if tipo_partida != 1160:
         continue
 
-    # 2. Chama a lista dos 8 jogadores
+    # 2. Calls the 8 players list
     jogadores = dados["info"]["participants"]
     
     # 3. Procura nos jogadores o PUUID == meu_PUUID e caso igual puxa as infos da partida específica
@@ -84,7 +83,7 @@ for partida_id in lista_partidas:
             colocacao = jogador["placement"]
             dano = jogador["total_damage_to_players"]
             
-            # Cria a "linha" na planilha com os dados
+            # Create the line with the data on the spreadsheets
             linha = {
                 "ID_Partida": partida_id,
                 "Colocação": colocacao,
